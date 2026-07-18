@@ -1,61 +1,78 @@
-# personal-os
+# Sankalp
 
-> A second brain for the builder, the learner, and the practitioner — all in one place.
+A private, single-page site for daily practice and daily identity. One file — `index.html` — with three views switched by the tabs at the top, no page reloads:
 
-Four pillars. One system. Every piece of information here knows where it came from and where it can go.
+- **Today** — the day's arc: five sadhanas as a dawn-to-dusk ring, plus your leadership vow for any room you walk into.
+- **Thoughts** — a running journal. No structure, no categories, just capture and timestamp.
+- **Gallery** — YouTube links paired with the one idea each gave you.
 
----
+Only three files total: `index.html`, `style.css`, `app.js`.
 
-## Pillars
+## How it works
 
-| Repo | Purpose | Cadence |
-|---|---|---|
-| [daily-journal](./daily-journal/) | Inner practice — Sadhana, intentions, evening reflection | Daily |
-| [daily-learnings](./daily-learnings/) | Published learnings — AI, fintech, leadership | When you learn something worth sharing |
-| [domain-notes](./domain-notes/) | Deep knowledge base — MF, Demat, LAS, Insurance, G-Sec | When domain understanding deepens |
-| [learning-labs](./learning-labs/) | Course work and experiments — one folder per course | Per course/module |
+Everything saves to **your browser's localStorage** first — instantly, as you type, no button needed. That's your safety net; nothing is ever lost mid-day.
 
----
+**Sync to GitHub** is a separate, deliberate step. Click it once (end of day, ritual-style) and it:
+1. Looks at what's new since your *last* sync — new thoughts, new gallery links, today's sadhana count.
+2. Pushes one commit containing a full snapshot of all your data, with a commit message that summarizes just what's new (e.g. `Sankalp sync — 3 thoughts, 1 video, 4/5 sadhana — 18 Jul 2026`).
+3. Your git log ends up as a clean, one-line-per-day record — a real trail of the practice, not a noisy commit per click.
 
-## How the pillars connect
+This means:
+- Entries are tied to the browser/device you use until you sync. If you use the site on your phone and laptop, sync from both and the *latest* sync wins as the source of truth in GitHub (the snapshot always overwrites the file — it doesn't merge across devices).
+- Clearing your browser data before syncing will lose whatever hasn't been pushed. Sync regularly if this matters to you.
+- Your GitHub personal access token is also stored in localStorage (see the setup section below) — treat it with the same care as your entries.
 
-```
-daily-journal  ──links──►  daily-learnings  ──domain_ref──►  domain-notes
-     │                            │
-     └──youtube_idea──►  (future content ideas)
-     
-learning-labs  ──applies──►  daily-journal (focus_tag: lab)
-                      └──►  daily-learnings (publish what you built)
-```
+## Setting up GitHub sync
 
-Every journal entry has a `links:` block that bridges the four pillars:
-- `learning_post` — did you publish something today? link it.
-- `domain_ref` — did you deepen a domain note? say which one.
-- `youtube_idea` — did you have a content idea? seed it here.
+1. Create an empty GitHub repo (e.g. `sankalp`) if you don't have one.
+2. On GitHub: **Settings → Developer settings → Fine-grained tokens → Generate new token.**
+   - Repository access: only the one repo you made.
+   - Permissions: **Contents → Read and write.** Nothing else.
+3. In the site, click the ⚙ icon next to "Sync to GitHub" and enter your GitHub username, repo name, file path (defaults to `sankalp-data.json`), and the token.
+4. Click **Save connection**, then **Sync to GitHub** whenever you want to commit the day's entries.
 
----
+You can revoke the token from GitHub at any time, or hit **Disconnect** in the settings modal to remove it from this browser.
 
-## Daily rhythm
+## Run it locally, right now
 
-| Time | Action | Tool |
-|---|---|---|
-| Morning | Create today's entry | `daily-journal/scripts/today.sh` |
-| Anytime | Publish a learning | create `_posts/YYYY-MM-DD-title.md` in daily-learnings |
-| Evening | Reflect + fill links block | same entry file |
-| Commit | Push the day | `daily-journal/scripts/commit.sh` |
-| Sunday | Weekly synthesis | `daily-journal/scripts/weekly.py` |
-| Anytime | Check streak + stats | `python3 daily-journal/scripts/streak.py` |
-
----
-
-## Repo remotes
-
-Each sub-folder is its own independent git repo. Remotes are configured inside each `.git/config`.
+No build step. Just open `index.html` in a browser. Double-click the file, or:
 
 ```bash
-# Check where each repo pushes to
-git -C daily-journal remote -v
-git -C daily-learnings remote -v
-git -C domain-notes remote -v
-git -C learning-labs remote -v
+open index.html        # macOS
+start index.html       # Windows
 ```
+
+## Host it for free on GitHub Pages
+
+1. Create a new repo, e.g. `sankalp`.
+2. Push these three files (`index.html`, `style.css`, `app.js`) to the repo root.
+3. In the repo: **Settings → Pages → Source → Deploy from branch → main → / (root)**.
+4. Your site is live at `https://<your-username>.github.io/sankalp/`.
+
+Since this uses no backend, GitHub Pages is a perfect fit — it's just static files.
+
+## Backing up your entries
+
+Your data lives in the browser. To back it up, open the browser console on any page (F12 → Console) and run:
+
+```js
+copy(JSON.stringify({
+  sadhana: localStorage.getItem('sankalp.sadhana.v1'),
+  streak: localStorage.getItem('sankalp.streak.v1'),
+  thoughts: localStorage.getItem('sankalp.thoughts.v1'),
+  gallery: localStorage.getItem('sankalp.gallery.v1'),
+}))
+```
+
+This copies a JSON snapshot to your clipboard — paste it into a text file and save it somewhere safe.
+
+## Editing your leadership vow
+
+The four vow statements live directly in `index.html` inside the `.vow-grid` block — plain HTML, easy to edit as your thinking evolves. This is meant to be a living document; change it as you change.
+
+## What's next, if you want it
+
+- Editable practice names (currently hardcoded in `app.js` → `PRACTICES`)
+- Weekly/monthly view of your sadhana streak
+- Export/import so entries sync across devices
+- A "review" page that resurfaces old thoughts on their anniversary
