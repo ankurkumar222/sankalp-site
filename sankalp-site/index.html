@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sankalp</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Space+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+  /* ---- Kriya Ring (Today view) ---- */
+  .ring-wrap{ text-align:center; padding: 8px 0 4px; }
+  .ring-svg{ width: 100%; max-width: 640px; height: auto; }
+  .ring-track{ fill:none; stroke: var(--line); stroke-width: 2; stroke-dasharray: 2 8; stroke-linecap: round; }
+  .node-hit{ cursor:pointer; }
+  .node-circle{ fill: var(--panel-raise); stroke: var(--line); stroke-width: 2; transition: all 0.25s ease; }
+  .node-hit.done .node-circle{ fill: var(--saffron); stroke: var(--saffron); filter: drop-shadow(0 0 10px rgba(232,151,61,0.55)); }
+  .node-hit:hover .node-circle{ stroke: var(--saffron); }
+  .node-icon{ fill: var(--ink-dim); font-size: 15px; font-family: var(--font-mono); pointer-events:none; }
+  .node-hit.done .node-icon{ fill: #1A1206; }
+  .node-label{ fill: var(--ink); font-family: var(--font-body); font-size: 13px; font-weight: 500; pointer-events:none; }
+  .node-sub{ fill: var(--ink-faint); font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.03em; pointer-events:none; }
+
+  .ring-meta{
+    display:flex; justify-content:center; gap: 40px; margin-top: 6px;
+    font-family: var(--font-mono); font-size: 12px; color: var(--ink-dim);
+  }
+  .ring-meta b{ color: var(--saffron); font-size: 18px; display:block; font-family: var(--font-display); font-weight:600; }
+  .ring-meta span{ display:block; margin-top: 4px; letter-spacing: 0.05em; text-transform: uppercase; font-size: 10px; }
+
+  .vow-grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; }
+  @media (max-width: 640px){ .vow-grid{ grid-template-columns: 1fr; } }
+  .vow-item{
+    background: var(--void); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 18px 20px; position:relative;
+  }
+  .vow-item .num{ font-family: var(--font-mono); font-size: 11px; color: var(--teal); letter-spacing: 0.08em; }
+  .vow-item p{ margin: 8px 0 0; font-size: 14px; color: var(--ink); line-height: 1.55; }
+  .vow-item p em{ color: var(--saffron); font-style: normal; font-weight: 600; }
+
+  .hero-greet{ font-family: var(--font-mono); font-size: 12px; color: var(--teal); letter-spacing: 0.1em; text-transform: uppercase; margin: 0 0 6px; }
+
+  /* ---- Thoughts view ---- */
+  .composer{ display:flex; flex-direction:column; gap: 12px; }
+  .composer-foot{ display:flex; justify-content: space-between; align-items:center; }
+  .hint{ font-family: var(--font-mono); font-size: 11px; color: var(--ink-faint); }
+
+  .entry{
+    border-left: 2px solid var(--line);
+    padding: 4px 0 4px 20px;
+    margin-bottom: 26px;
+    position: relative;
+  }
+  .entry::before{
+    content:""; position:absolute; left:-5px; top:8px;
+    width:8px; height:8px; border-radius:50%; background: var(--teal);
+  }
+  .entry .ts{ font-family: var(--font-mono); font-size: 11px; color: var(--ink-faint); }
+  .entry p{ margin: 8px 0 0; font-size: 15px; line-height: 1.6; white-space: pre-wrap; }
+  .entry .del{
+    background:none; border:none; color: var(--ink-faint); font-family: var(--font-mono);
+    font-size: 11px; cursor:pointer; margin-top: 8px; padding: 0;
+  }
+  .entry .del:hover{ color: var(--danger); }
+
+  /* ---- Gallery view ---- */
+  .composer-row{ display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 640px){ .composer-row{ grid-template-columns: 1fr; } }
+
+  .grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 640px){ .grid{ grid-template-columns: 1fr; } }
+
+  .card{ background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow:hidden; }
+  .thumb{ position:relative; aspect-ratio: 16/9; background: var(--void); display:block; }
+  .thumb img{ width:100%; height:100%; object-fit: cover; display:block; }
+  .thumb .play{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    background: rgba(11,14,22,0.15); transition: background 0.15s;
+  }
+  .thumb .play::after{
+    content:"▶"; color:#fff; font-size: 15px; width:46px; height:46px; border-radius:50%;
+    background: rgba(11,14,22,0.55); display:flex; align-items:center; justify-content:center;
+    padding-left: 3px; border: 1px solid rgba(255,255,255,0.3);
+  }
+  .thumb:hover .play{ background: rgba(11,14,22,0.35); }
+
+  .card-body{ padding: 16px 18px; }
+  .card-body p{ margin:0; font-size: 13.5px; line-height: 1.5; color: var(--ink); }
+  .card-foot{ display:flex; justify-content: space-between; align-items:center; margin-top: 12px; }
+  .card-foot .ts{ font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-faint); }
+  .del{ background:none; border:none; color: var(--ink-faint); font-family: var(--font-mono); font-size: 10.5px; cursor:pointer; padding:0; }
+  .del:hover{ color: var(--danger); }
+
+  /* ---- Journal view ---- */
+  .journal-phase{
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--teal); margin-bottom: 20px; display: block;
+  }
+  .journal-phase.evening{ color: var(--saffron); }
+  .field-group{ margin-bottom: 16px; }
+  .field-group:last-child{ margin-bottom: 0; }
+  .field-label{
+    display:block; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--ink-faint); margin-bottom: 7px;
+  }
+  .rating-row{ display:flex; gap: 8px; margin-top: 2px; }
+  .rating-btn{
+    width: 38px; height: 38px; background: var(--void); border: 1px solid var(--line);
+    border-radius: var(--radius); color: var(--ink-dim); font-family: var(--font-mono);
+    font-size: 13px; cursor: pointer; transition: border-color 0.15s, color 0.15s, background 0.15s;
+  }
+  .rating-btn:hover{ border-color: var(--saffron); color: var(--saffron); }
+  .rating-btn.selected{ background: var(--saffron); border-color: var(--saffron); color: #1A1206; font-weight: 600; }
+
+  .j-entry{
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 18px 20px; margin-bottom: 12px; cursor: pointer; transition: border-color 0.15s;
+  }
+  .j-entry:hover{ border-color: var(--line-soft); }
+  .j-entry-head{ display:flex; align-items:flex-start; justify-content:space-between; gap: 12px; }
+  .j-entry-date{ font-family: var(--font-mono); font-size: 12px; color: var(--teal); letter-spacing: 0.05em; }
+  .j-entry-day{ font-family: var(--font-mono); font-size: 11px; color: var(--ink-faint); }
+  .j-entry-meta{ display:flex; align-items:center; gap: 10px; flex-shrink: 0; }
+  .j-entry-rating{ font-family: var(--font-mono); font-size: 11px; color: var(--saffron); }
+  .j-sync-pill{
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.04em;
+    padding: 2px 7px; border-radius: 20px; border: 1px solid;
+  }
+  .j-sync-pill.synced{ color: var(--teal); border-color: var(--teal-dim); }
+  .j-sync-pill.local{ color: var(--ink-faint); border-color: var(--line); }
+  .j-entry-sankalp{ margin: 8px 0 0; font-size: 13.5px; color: var(--ink-dim); font-style: italic; }
+  .j-entry-body{
+    display: none; margin-top: 18px; border-top: 1px solid var(--line);
+    padding-top: 18px;
+  }
+  .j-entry.open .j-entry-body{ display: block; }
+  .j-field{ margin-bottom: 14px; }
+  .j-field .lbl{
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--ink-faint); margin-bottom: 4px;
+  }
+  .j-field .val{ font-size: 13.5px; color: var(--ink); line-height: 1.6; white-space: pre-wrap; }
+  .j-field-row{ display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  @media (max-width: 640px){ .j-field-row{ grid-template-columns: 1fr; } }
+
+  /* ---- view switching ---- */
+  .view{ display:none; }
+  .view.active{ display:block; }
+
+  /* ---- sync controls ---- */
+  .sync-cluster{ display:flex; align-items:center; gap: 10px; }
+  .sync-status{
+    font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-faint);
+    letter-spacing: 0.03em; white-space: nowrap;
+  }
+  .sync-status.ok{ color: var(--teal); }
+  .sync-status.err{ color: var(--danger); }
+  .sync-status.busy{ color: var(--saffron); }
+  .icon-btn{
+    background: var(--panel-raise); border: 1px solid var(--line); color: var(--ink-dim);
+    width: 34px; height: 34px; border-radius: var(--radius); cursor:pointer;
+    display:flex; align-items:center; justify-content:center; font-size: 14px;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .icon-btn:hover{ border-color: var(--saffron); color: var(--saffron); }
+  .btn.sync{
+    display:flex; align-items:center; gap: 8px;
+  }
+  .btn.sync .dot{ width:6px; height:6px; border-radius:50%; background: var(--ink-faint); }
+  .btn.sync.has-new .dot{ background: var(--saffron); box-shadow: 0 0 6px rgba(232,151,61,0.7); }
+
+  /* ---- modal ---- */
+  .modal-overlay{
+    display:none; position:fixed; inset:0; background: rgba(5,6,10,0.72);
+    align-items:center; justify-content:center; z-index: 100; padding: 20px;
+  }
+  .modal-overlay.open{ display:flex; }
+  .modal{
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 28px; max-width: 440px; width:100%; max-height: 90vh; overflow-y: auto;
+  }
+  .modal h2{ font-family: var(--font-display); font-size: 20px; font-weight:500; margin: 0 0 8px; }
+  .modal .desc{ color: var(--ink-dim); font-size: 13px; line-height: 1.55; margin: 0 0 22px; }
+  .field{ margin-bottom: 14px; }
+  .field label{
+    display:block; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--ink-faint); margin-bottom: 6px;
+  }
+  .field .fhint{ font-size: 11px; color: var(--ink-faint); margin-top: 5px; line-height:1.4; }
+  .modal-divider{
+    border: none; border-top: 1px solid var(--line); margin: 20px 0;
+  }
+  .modal-section-label{
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ink-faint); margin-bottom: 14px;
+  }
+  .modal-foot{ display:flex; justify-content: space-between; align-items:center; margin-top: 22px; }
+  .warn-box{
+    background: rgba(194,84,80,0.08); border: 1px solid rgba(194,84,80,0.3); border-radius: var(--radius);
+    padding: 12px 14px; font-size: 12px; color: var(--ink-dim); line-height: 1.5; margin-bottom: 18px;
+  }
+  .warn-box b{ color: var(--danger); }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="topnav">
+    <div class="wordmark">&#2360;&#2306;&#2325;&#2354;&#2381;&#2346; <small>SANKALP</small></div>
+    <div class="navlinks">
+      <a href="#today" data-view="today" class="active">Today</a>
+      <a href="#journal" data-view="journal">Journal</a>
+      <a href="#thoughts" data-view="thoughts">Thoughts</a>
+      <a href="#gallery" data-view="gallery">Gallery</a>
+    </div>
+    <div class="sync-cluster">
+      <span class="sync-status" id="syncStatus">not synced yet</span>
+      <button class="btn small sync" id="syncBtn"><span class="dot"></span>Sync to GitHub</button>
+      <button class="icon-btn" id="settingsBtn" title="GitHub connection settings">&#9881;</button>
+    </div>
+  </div>
+
+  <!-- ===================== TODAY ===================== -->
+  <section class="view active" id="view-today">
+    <p class="hero-greet" id="greet"></p>
+    <h1 class="page-title">The arc of the day</h1>
+    <p class="page-sub">Five practices, dawn to dusk. Mark what's done — the ring holds the rest.</p>
+
+    <div class="panel">
+      <div class="ring-wrap">
+        <svg class="ring-svg" viewBox="0 0 700 250" xmlns="http://www.w3.org/2000/svg">
+          <path class="ring-track" d="M60,220 Q350,10 640,220"></path>
+          <g id="nodes"></g>
+        </svg>
+      </div>
+      <div class="ring-meta">
+        <div><b id="doneCount">0/5</b><span>today</span></div>
+        <div><b id="streakCount">0</b><span>day streak</span></div>
+      </div>
+    </div>
+
+    <div class="section-label">Who I am in the room</div>
+
+    <div class="panel">
+      <p style="margin:0; color:var(--ink-dim); font-size:13px;">The version of me that walks into any meeting.</p>
+      <div class="vow-grid">
+        <div class="vow-item">
+          <div class="num">01</div>
+          <p>I am the <em>most humble</em> person in the room — no title precedes the listening.</p>
+        </div>
+        <div class="vow-item">
+          <div class="num">02</div>
+          <p>I ask <em>more questions</em> than anyone else — clarity before opinion.</p>
+        </div>
+        <div class="vow-item">
+          <div class="num">03</div>
+          <p>I am the one who <em>opens the sheet</em> — the notepad, the Excel — and makes the invisible visible for everyone.</p>
+        </div>
+        <div class="vow-item">
+          <div class="num">04</div>
+          <p>I <em>bring the room to a close</em> — not by talking longest, but by naming what we now agree on.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== JOURNAL ===================== -->
+  <section class="view" id="view-journal">
+    <p class="eyebrow">Daily Journal</p>
+    <h1 class="page-title">The day, examined</h1>
+    <p class="page-sub">Write your morning plan and evening reflection. Syncs to GitHub as markdown — one file per day.</p>
+
+    <div class="section-label" id="journalTodayLabel">Today</div>
+
+    <!-- Morning plan -->
+    <div class="panel">
+      <span class="journal-phase">Morning — Plan</span>
+      <div class="field-group">
+        <label class="field-label">Sadhana practice</label>
+        <textarea id="j_sadhana_plan" rows="2" placeholder="Practice, duration, time of day…"></textarea>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Learning focus</label>
+        <textarea id="j_learning_plan" rows="2" placeholder="Topic, source, why today…"></textarea>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Work priority</label>
+        <textarea id="j_work_plan" rows="2" placeholder="Top priority, secondary…"></textarea>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Sankalp — intention for the day</label>
+        <input type="text" id="j_sankalp" placeholder="One line. The thread you'll hold all day.">
+      </div>
+    </div>
+
+    <!-- Evening reflection -->
+    <div class="panel" style="margin-top: 16px;">
+      <span class="journal-phase evening">Evening — Reflection</span>
+      <div class="field-group">
+        <label class="field-label">Sadhana — did it happen? How did it feel?</label>
+        <textarea id="j_sadhana_ref" rows="2" placeholder=""></textarea>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Learning — what actually got learned?</label>
+        <textarea id="j_learning_ref" rows="2" placeholder=""></textarea>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Work — what shipped / moved / got stuck?</label>
+        <textarea id="j_work_ref" rows="2" placeholder=""></textarea>
+      </div>
+      <div class="j-field-row">
+        <div class="field-group" style="margin:0;">
+          <label class="field-label">Gratitude — one thing</label>
+          <input type="text" id="j_gratitude" placeholder="">
+        </div>
+        <div class="field-group" style="margin:0;">
+          <label class="field-label">Tomorrow's first move</label>
+          <input type="text" id="j_tomorrow" placeholder="Before checking phone / Slack">
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Friction — what pulled you off-plan today?</label>
+        <textarea id="j_friction" rows="2" placeholder=""></textarea>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Self-rating</label>
+        <div class="rating-row" id="j_rating_row">
+          <button class="rating-btn" data-v="1">1</button>
+          <button class="rating-btn" data-v="2">2</button>
+          <button class="rating-btn" data-v="3">3</button>
+          <button class="rating-btn" data-v="4">4</button>
+          <button class="rating-btn" data-v="5">5</button>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 20px;">
+        <span class="hint" id="journalSaveHint"></span>
+        <button class="btn primary" id="saveJournalBtn">Save entry</button>
+      </div>
+    </div>
+
+    <!-- Past entries -->
+    <div class="section-label" style="margin-top: 44px;">Past entries</div>
+    <div id="journalPastList"></div>
+  </section>
+
+  <!-- ===================== THOUGHTS ===================== -->
+  <section class="view" id="view-thoughts">
+    <p class="eyebrow">Journal</p>
+    <h1 class="page-title">Where the thinking lands</h1>
+    <p class="page-sub">No structure required. Write what's actually on your mind — it saves the moment you set it down.</p>
+
+    <div class="panel">
+      <div class="composer">
+        <textarea id="entryText" rows="4" placeholder="What are you thinking right now?"></textarea>
+        <div class="composer-foot">
+          <span class="hint">saved to this browser only</span>
+          <button class="btn primary" id="addThoughtBtn">Capture thought</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label">Entries</div>
+    <div id="thoughtsList"></div>
+  </section>
+
+  <!-- ===================== GALLERY ===================== -->
+  <section class="view" id="view-gallery">
+    <p class="eyebrow">Ideas &amp; sources</p>
+    <h1 class="page-title">What's shaping the thinking</h1>
+    <p class="page-sub">Drop a YouTube link, pin the one idea it gave you. Over time this becomes a map of your influences.</p>
+
+    <div class="panel">
+      <div class="composer-row">
+        <input type="url" id="urlInput" placeholder="https://youtube.com/watch?v=...">
+        <input type="text" id="noteInput" placeholder="The one idea this gave you">
+      </div>
+      <div class="composer-foot" style="margin-top:12px;">
+        <span class="hint">saved to this browser only</span>
+        <button class="btn primary" id="addGalleryBtn">Add to gallery</button>
+      </div>
+    </div>
+
+    <div class="section-label">Collection</div>
+    <div id="galleryGrid" class="grid"></div>
+  </section>
+
+  <div class="footnote">Sankalp · a private practice · saved locally, synced to GitHub on demand</div>
+</div>
+
+<!-- ===================== SETTINGS MODAL ===================== -->
+<div class="modal-overlay" id="settingsOverlay">
+  <div class="modal">
+    <h2>Connect GitHub</h2>
+    <p class="desc">Entries save here instantly as you go. Hitting "Sync to GitHub" pushes a snapshot JSON and individual journal markdown files to your repo.</p>
+
+    <div class="warn-box">
+      <b>Note:</b> your token is stored only in this browser's localStorage. Use a <b>fine-grained token</b> scoped to just this one repo with "Contents: Read and write" permission — nothing more — and revoke it anytime from GitHub.
+    </div>
+
+    <div class="modal-section-label">Repository</div>
+    <div class="field">
+      <label>GitHub username</label>
+      <input type="text" id="cfgOwner" placeholder="ankur-xxxx">
+    </div>
+    <div class="field">
+      <label>Repository name</label>
+      <input type="text" id="cfgRepo" placeholder="sankalp">
+      <div class="fhint">The repo must already exist on GitHub.</div>
+    </div>
+    <div class="field">
+      <label>Snapshot file path</label>
+      <input type="text" id="cfgPath" placeholder="sankalp-data.json">
+      <div class="fhint">Full JSON backup committed here on every sync. Defaults to <code>sankalp-data.json</code>.</div>
+    </div>
+    <div class="field">
+      <label>Personal access token</label>
+      <input type="password" id="cfgToken" placeholder="github_pat_...">
+      <div class="fhint">Settings → Developer settings → Fine-grained tokens.</div>
+    </div>
+
+    <hr class="modal-divider">
+    <div class="modal-section-label">Journal</div>
+    <div class="field">
+      <label>Journal entries path</label>
+      <input type="text" id="cfgJournalPath" placeholder="journal/entries">
+      <div class="fhint">Journal entries are committed as <code>{path}/YYYY/MM/YYYY-MM-DD.md</code>. Defaults to <code>journal/entries</code>.</div>
+    </div>
+
+    <div class="modal-foot">
+      <button class="btn ghost small" id="cfgClear">Disconnect</button>
+      <div style="display:flex; gap:10px;">
+        <button class="btn small" id="cfgCancel">Cancel</button>
+        <button class="btn primary small" id="cfgSave">Save connection</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+  /* ---------- view switching ---------- */
+  const VIEWS = ['today', 'journal', 'thoughts', 'gallery'];
+
+  function setView(name){
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.navlinks a').forEach(a => a.classList.remove('active'));
+    document.getElementById('view-' + name).classList.add('active');
+    document.querySelector(`.navlinks a[data-view="${name}"]`).classList.add('active');
+    history.replaceState(null, '', '#' + name);
+  }
+  document.querySelectorAll('.navlinks a').forEach(a=>{
+    a.addEventListener('click', (e)=>{
+      e.preventDefault();
+      setView(a.dataset.view);
+    });
+  });
+  const startView = (location.hash || '#today').slice(1);
+  setView(VIEWS.includes(startView) ? startView : 'today');
+
+  /* ---------- Today: Kriya Ring ---------- */
+  document.getElementById('greet').textContent = timeOfDayGreeting() + ', Ankur';
+
+  const NODE_POS = [
+    {x:60,  y:220}, {x:205, y:141}, {x:350, y:115}, {x:495, y:141}, {x:640, y:220}
+  ];
+  const ICONS = ['◈','∿','☉','♡','✎'];
+
+  function renderRing(){
+    const today = getSadhanaToday();
+    const g = document.getElementById('nodes');
+    g.innerHTML = '';
+    let doneN = 0;
+
+    PRACTICES.forEach((p, i)=>{
+      const pos = NODE_POS[i];
+      const isDone = !!today[p.key];
+      if(isDone) doneN++;
+
+      const node = document.createElementNS('http://www.w3.org/2000/svg','g');
+      node.setAttribute('class', 'node-hit' + (isDone ? ' done' : ''));
+      node.setAttribute('transform', `translate(${pos.x},${pos.y})`);
+      node.innerHTML = `
+        <circle class="node-circle" r="26"></circle>
+        <text class="node-icon" text-anchor="middle" dy="6">${ICONS[i]}</text>
+        <text class="node-label" text-anchor="middle" y="46">${p.label}</text>
+        <text class="node-sub" text-anchor="middle" y="60">${p.note}</text>
+      `;
+      node.addEventListener('click', ()=>{
+        toggleSadhana(p.key);
+        renderRing();
+      });
+      g.appendChild(node);
+    });
+
+    document.getElementById('doneCount').textContent = doneN + '/5';
+    document.getElementById('streakCount').textContent = getStreak().count;
+  }
+  renderRing();
+
+  /* ---------- Journal ---------- */
+  let journalRating = null;
+
+  function journalTodayLabel(){
+    const d = new Date();
+    const day = d.toLocaleDateString('en-IN', { weekday: 'long' });
+    const date = todayKey();
+    document.getElementById('journalTodayLabel').textContent = `Today — ${date} · ${day}`;
+  }
+  journalTodayLabel();
+
+  function loadTodayJournal(){
+    const entry = getJournalEntry(todayKey());
+    if(!entry) return;
+    document.getElementById('j_sadhana_plan').value  = entry.sadhana_plan  || '';
+    document.getElementById('j_learning_plan').value = entry.learning_plan || '';
+    document.getElementById('j_work_plan').value     = entry.work_plan     || '';
+    document.getElementById('j_sankalp').value       = entry.sankalp      || '';
+    document.getElementById('j_sadhana_ref').value   = entry.sadhana_ref  || '';
+    document.getElementById('j_learning_ref').value  = entry.learning_ref || '';
+    document.getElementById('j_work_ref').value      = entry.work_ref     || '';
+    document.getElementById('j_gratitude').value     = entry.gratitude    || '';
+    document.getElementById('j_friction').value      = entry.friction     || '';
+    document.getElementById('j_tomorrow').value      = entry.tomorrow     || '';
+    if(entry.self_rating != null){
+      setRating(entry.self_rating);
+    }
+    const hint = document.getElementById('journalSaveHint');
+    if(entry.updatedAt){
+      hint.textContent = 'last saved ' + formatDate(entry.updatedAt);
+    }
+  }
+
+  function setRating(v){
+    journalRating = v;
+    document.querySelectorAll('.rating-btn').forEach(btn => {
+      btn.classList.toggle('selected', Number(btn.dataset.v) === v);
+    });
+  }
+
+  document.querySelectorAll('.rating-btn').forEach(btn => {
+    btn.addEventListener('click', () => setRating(Number(btn.dataset.v)));
+  });
+
+  document.getElementById('saveJournalBtn').addEventListener('click', ()=>{
+    const fields = {
+      sadhana_plan:  document.getElementById('j_sadhana_plan').value.trim(),
+      learning_plan: document.getElementById('j_learning_plan').value.trim(),
+      work_plan:     document.getElementById('j_work_plan').value.trim(),
+      sankalp:       document.getElementById('j_sankalp').value.trim(),
+      sadhana_ref:   document.getElementById('j_sadhana_ref').value.trim(),
+      learning_ref:  document.getElementById('j_learning_ref').value.trim(),
+      work_ref:      document.getElementById('j_work_ref').value.trim(),
+      gratitude:     document.getElementById('j_gratitude').value.trim(),
+      friction:      document.getElementById('j_friction').value.trim(),
+      tomorrow:      document.getElementById('j_tomorrow').value.trim(),
+      self_rating:   journalRating,
+    };
+    saveJournalEntry(todayKey(), fields);
+    const hint = document.getElementById('journalSaveHint');
+    hint.textContent = 'saved just now';
+    refreshSyncUI();
+    renderJournalPast();
+  });
+
+  function renderJournalPast(){
+    const all = getJournalAll();
+    const entries = Object.values(all)
+      .filter(e => e.date && e.date !== todayKey())
+      .sort((a, b) => b.date.localeCompare(a.date));
+
+    const container = document.getElementById('journalPastList');
+    if(entries.length === 0){
+      container.innerHTML = '<div class="empty">No past entries yet. Save today\'s entry to start the archive.</div>';
+      return;
+    }
+
+    container.innerHTML = entries.map(e => {
+      const day = journalDayName(e.date);
+      const fields = [
+        ['Sadhana plan', e.sadhana_plan],
+        ['Learning', e.learning_plan],
+        ['Work plan', e.work_plan],
+        ['Sadhana reflection', e.sadhana_ref],
+        ['Learning reflection', e.learning_ref],
+        ['Work reflection', e.work_ref],
+        ['Gratitude', e.gratitude],
+        ['Friction', e.friction],
+        ["Tomorrow's first move", e.tomorrow],
+      ].filter(([, v]) => v && v.trim());
+
+      const bodyHtml = fields.length
+        ? fields.map(([k, v]) => `
+            <div class="j-field">
+              <div class="lbl">${k}</div>
+              <div class="val">${v.replace(/</g,'&lt;')}</div>
+            </div>`).join('')
+        : '<div class="empty" style="padding:16px 0 0">Nothing recorded.</div>';
+
+      return `
+        <div class="j-entry" data-date="${e.date}">
+          <div class="j-entry-head">
+            <div>
+              <span class="j-entry-date">${e.date}</span>
+              <span class="j-entry-day"> — ${day}</span>
+            </div>
+            <div class="j-entry-meta">
+              ${e.self_rating != null ? `<span class="j-entry-rating">${e.self_rating}/5</span>` : ''}
+              <span class="j-sync-pill ${e.synced ? 'synced' : 'local'}">${e.synced ? 'synced' : 'local'}</span>
+            </div>
+          </div>
+          ${e.sankalp ? `<div class="j-entry-sankalp">"${e.sankalp.replace(/</g,'&lt;')}"</div>` : ''}
+          <div class="j-entry-body">${bodyHtml}</div>
+        </div>`;
+    }).join('');
+
+    container.querySelectorAll('.j-entry').forEach(el => {
+      el.addEventListener('click', () => el.classList.toggle('open'));
+    });
+  }
+
+  loadTodayJournal();
+  renderJournalPast();
+
+  /* ---------- Thoughts ---------- */
+  const thoughtsList = document.getElementById('thoughtsList');
+  const entryText = document.getElementById('entryText');
+
+  function renderThoughts(){
+    const items = getThoughts();
+    if(items.length === 0){
+      thoughtsList.innerHTML = '<div class="empty">Nothing captured yet. The first thought is usually the truest one.</div>';
+      return;
+    }
+    thoughtsList.innerHTML = items.map(t => `
+      <div class="entry">
+        <div class="ts">${formatDate(t.ts)}</div>
+        <p>${t.text.replace(/</g,'&lt;')}</p>
+        <button class="del" data-id="${t.id}">remove</button>
+      </div>
+    `).join('');
+    thoughtsList.querySelectorAll('.del').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        deleteThought(btn.dataset.id);
+        renderThoughts();
+      });
+    });
+  }
+  document.getElementById('addThoughtBtn').addEventListener('click', ()=>{
+    const val = entryText.value.trim();
+    if(!val) return;
+    addThought(val);
+    entryText.value = '';
+    renderThoughts();
+    refreshSyncUI();
+  });
+  entryText.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter' && (e.metaKey || e.ctrlKey)) document.getElementById('addThoughtBtn').click();
+  });
+  renderThoughts();
+
+  /* ---------- Gallery ---------- */
+  const galleryGrid = document.getElementById('galleryGrid');
+  const urlInput = document.getElementById('urlInput');
+  const noteInput = document.getElementById('noteInput');
+
+  function renderGallery(){
+    const items = getGallery();
+    if(items.length === 0){
+      galleryGrid.className = '';
+      galleryGrid.innerHTML = '<div class="empty">No videos yet. Paste a link above to start the collection.</div>';
+      return;
+    }
+    galleryGrid.className = 'grid';
+    galleryGrid.innerHTML = items.map(g => `
+      <div class="card">
+        <a class="thumb" href="${g.url}" target="_blank" rel="noopener">
+          <img src="${g.videoId ? 'https://img.youtube.com/vi/'+g.videoId+'/hqdefault.jpg' : ''}" alt="" onerror="this.style.display='none'">
+          <span class="play"></span>
+        </a>
+        <div class="card-body">
+          <p>${(g.note || '').replace(/</g,'&lt;') || '<span style="color:var(--ink-faint)">no note added</span>'}</p>
+          <div class="card-foot">
+            <span class="ts">${formatDate(g.ts)}</span>
+            <button class="del" data-id="${g.id}">remove</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+    galleryGrid.querySelectorAll('.del').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        e.preventDefault();
+        deleteGalleryItem(btn.dataset.id);
+        renderGallery();
+      });
+    });
+  }
+  document.getElementById('addGalleryBtn').addEventListener('click', ()=>{
+    const url = urlInput.value.trim();
+    const note = noteInput.value.trim();
+    if(!url) return;
+    addGalleryItem(url, note);
+    urlInput.value = '';
+    noteInput.value = '';
+    renderGallery();
+    refreshSyncUI();
+  });
+  renderGallery();
+
+  /* ---------- GitHub sync UI ---------- */
+  const syncBtn = document.getElementById('syncBtn');
+  const syncStatusEl = document.getElementById('syncStatus');
+  const settingsOverlay = document.getElementById('settingsOverlay');
+
+  function hasUnsyncedWork(){
+    const lastSync = getLastSync();
+    const newThoughts = getThoughts().filter(t => new Date(t.ts).getTime() > lastSync).length;
+    const newGallery = getGallery().filter(g => new Date(g.ts).getTime() > lastSync).length;
+    const doneToday = PRACTICES.filter(p => getSadhanaToday()[p.key]).length;
+    const unsyncedJournal = getUnsyncedJournal().length;
+    return (newThoughts + newGallery + doneToday + unsyncedJournal) > 0;
+  }
+
+  function relativeTime(ms){
+    if(!ms) return null;
+    const diff = Date.now() - ms;
+    const mins = Math.floor(diff / 60000);
+    if(mins < 1) return 'just now';
+    if(mins < 60) return mins + 'm ago';
+    const hrs = Math.floor(mins / 60);
+    if(hrs < 24) return hrs + 'h ago';
+    return Math.floor(hrs / 24) + 'd ago';
+  }
+
+  function refreshSyncUI(){
+    const last = getLastSync();
+    syncBtn.classList.toggle('has-new', hasUnsyncedWork());
+    if(!getGithubConfig()){
+      syncStatusEl.textContent = 'not connected';
+      syncStatusEl.className = 'sync-status';
+    } else if(last){
+      syncStatusEl.textContent = 'synced ' + relativeTime(last);
+      syncStatusEl.className = 'sync-status ok';
+    } else {
+      syncStatusEl.textContent = 'not synced yet';
+      syncStatusEl.className = 'sync-status';
+    }
+  }
+
+  function openSettings(){
+    const cfg = getGithubConfig() || {};
+    document.getElementById('cfgOwner').value       = cfg.owner       || '';
+    document.getElementById('cfgRepo').value        = cfg.repo        || '';
+    document.getElementById('cfgPath').value        = cfg.path        || 'sankalp-data.json';
+    document.getElementById('cfgToken').value       = cfg.token       || '';
+    document.getElementById('cfgJournalPath').value = cfg.journalPath || 'journal/entries';
+    settingsOverlay.classList.add('open');
+  }
+  function closeSettings(){ settingsOverlay.classList.remove('open'); }
+
+  document.getElementById('settingsBtn').addEventListener('click', openSettings);
+  document.getElementById('cfgCancel').addEventListener('click', closeSettings);
+  settingsOverlay.addEventListener('click', (e)=>{ if(e.target === settingsOverlay) closeSettings(); });
+
+  document.getElementById('cfgSave').addEventListener('click', ()=>{
+    const owner       = document.getElementById('cfgOwner').value.trim();
+    const repo        = document.getElementById('cfgRepo').value.trim();
+    const path        = document.getElementById('cfgPath').value.trim()        || 'sankalp-data.json';
+    const token       = document.getElementById('cfgToken').value.trim();
+    const journalPath = document.getElementById('cfgJournalPath').value.trim() || 'journal/entries';
+    if(!owner || !repo || !token){
+      alert('Username, repo, and token are all required.');
+      return;
+    }
+    saveGithubConfig({ owner, repo, path, token, journalPath });
+    closeSettings();
+    refreshSyncUI();
+  });
+
+  document.getElementById('cfgClear').addEventListener('click', ()=>{
+    if(confirm('Remove the saved GitHub connection from this browser?')){
+      clearGithubConfig();
+      closeSettings();
+      refreshSyncUI();
+    }
+  });
+
+  syncBtn.addEventListener('click', async ()=>{
+    if(!getGithubConfig()){ openSettings(); return; }
+
+    syncBtn.disabled = true;
+    syncStatusEl.textContent = 'syncing…';
+    syncStatusEl.className = 'sync-status busy';
+    try{
+      await syncToGithub();
+      syncStatusEl.textContent = 'synced just now';
+      syncStatusEl.className = 'sync-status ok';
+      renderJournalPast(); // refresh sync pills
+    }catch(e){
+      if(e.message === 'NOTHING_NEW'){
+        syncStatusEl.textContent = 'nothing new to sync';
+        syncStatusEl.className = 'sync-status';
+      } else if(e.message === 'NO_CONFIG'){
+        openSettings();
+      } else {
+        syncStatusEl.textContent = 'sync failed — check settings';
+        syncStatusEl.className = 'sync-status err';
+        console.error(e);
+      }
+    }finally{
+      syncBtn.disabled = false;
+      refreshSyncUI();
+    }
+  });
+
+  refreshSyncUI();
+  setInterval(refreshSyncUI, 60000);
+</script>
+</body>
+</html>
