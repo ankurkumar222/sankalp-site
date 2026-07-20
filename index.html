@@ -169,6 +169,36 @@
   .btn.sync .dot{ width:6px; height:6px; border-radius:50%; background: var(--ink-faint); }
   .btn.sync.has-new .dot{ background: var(--saffron); box-shadow: 0 0 6px rgba(232,151,61,0.7); }
 
+  /* ---- domain bar ---- */
+  .domain-bar{
+    display:flex; align-items:center; gap: 12px; flex-wrap: wrap;
+    padding: 10px 0 6px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 32px;
+  }
+  .domain-bar-label{
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ink-faint); flex-shrink: 0; margin-right: 4px;
+  }
+  .domain-chip{
+    display:flex; align-items:center; gap: 8px;
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 6px; padding: 7px 14px;
+    text-decoration: none; transition: border-color 0.18s, background 0.18s;
+    flex-shrink: 0;
+  }
+  .domain-chip:hover{ border-color: var(--teal); background: var(--panel-raise); }
+  .domain-chip .chip-dot{
+    width: 6px; height: 6px; border-radius: 50%; background: var(--teal);
+    box-shadow: 0 0 5px rgba(79,193,166,0.6); flex-shrink: 0;
+  }
+  .domain-chip .chip-name{
+    font-family: var(--font-mono); font-size: 11.5px; color: var(--ink); letter-spacing: 0.02em;
+  }
+  .domain-chip .chip-sub{
+    font-family: var(--font-mono); font-size: 9.5px; color: var(--ink-faint); margin-left: 2px;
+  }
+
   /* ---- modal ---- */
   .modal-overlay{
     display:none; position:fixed; inset:0; background: rgba(5,6,10,0.72);
@@ -218,6 +248,26 @@
       <button class="btn small sync" id="syncBtn"><span class="dot"></span>Sync to GitHub</button>
       <button class="icon-btn" id="settingsBtn" title="GitHub connection settings">&#9881;</button>
     </div>
+  </div>
+
+  <!-- ===================== DOMAIN BAR ===================== -->
+  <div class="domain-bar">
+    <span class="domain-bar-label">also live</span>
+    <a class="domain-chip" href="https://antarmukh.shivmarg.in" target="_blank" rel="noopener">
+      <span class="chip-dot"></span>
+      <span class="chip-name">antarmukh</span>
+      <span class="chip-sub">.shivmarg.in</span>
+    </a>
+    <a class="domain-chip" href="https://architects.shivmarg.in" target="_blank" rel="noopener">
+      <span class="chip-dot"></span>
+      <span class="chip-name">architects</span>
+      <span class="chip-sub">.shivmarg.in</span>
+    </a>
+    <a class="domain-chip" href="https://stock.shivmarg.in" target="_blank" rel="noopener">
+      <span class="chip-dot"></span>
+      <span class="chip-name">stock</span>
+      <span class="chip-sub">.shivmarg.in</span>
+    </a>
   </div>
 
   <!-- ===================== TODAY ===================== -->
